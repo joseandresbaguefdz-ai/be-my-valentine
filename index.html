@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Be My Valentine?</title>
     <style>
+        * { box-sizing: border-box; }
+
         body {
             display: flex;
             flex-direction: column;
@@ -17,12 +19,33 @@
             overflow: hidden;
         }
 
+        .heart-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .floating-heart {
+            position: absolute;
+            animation: floatUp linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0%   { transform: translateY(100vh) rotate(0deg);   opacity: 0.7; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0;   }
+        }
+
         #container {
             text-align: center;
             background: white;
             padding: 2rem;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
         }
 
         img {
@@ -35,28 +58,40 @@
 
         h1 {
             color: #d63384;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
+        }
+
+        #escapeCounter {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 20px;
+            min-height: 1.3em;
+            transition: color 0.3s, transform 0.15s;
+        }
+
+        #escapeCounter.bump {
+            color: #d63384;
+            transform: scale(1.15);
         }
 
         .buttons {
             display: flex;
             gap: 20px;
             justify-content: center;
-            position: relative;
         }
 
         button {
-            padding: 15px 30px;
-            font-size: 1.2rem;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.2s;
+            padding: 15px 30px;
+            font-size: 1.2rem;
         }
 
         #yesBtn {
             background-color: #ff4d6d;
             color: white;
+            transition: transform 0.2s, font-size 0.4s, padding 0.4s;
         }
 
         #yesBtn:hover {
@@ -66,52 +101,128 @@
         #noBtn {
             background-color: #888;
             color: white;
-            position: absolute;
-            left: 150px; /* Default offset from center */
+            position: fixed;
+            transition: font-size 0.3s, padding 0.3s;
+            white-space: nowrap;
+        }
+
+        .confetti-piece {
+            position: fixed;
+            top: -12px;
+            border-radius: 2px;
+            animation: confettiFall linear forwards;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        @keyframes confettiFall {
+            0%   { transform: translateY(0)     rotate(0deg);   opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
+    <div class="heart-bg" id="heartBg"></div>
+
     <div id="container">
-        <img id="gifDisplay" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHp1eXF5Nm9mZzR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/cLS1cfxvGOPVpf9g3y/giphy.gif" alt="Puppy Eyes">
+        <img id="gifDisplay"
+             src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHp1eXF5Nm9mZzR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/cLS1cfxvGOPVpf9g3y/giphy.gif"
+             alt="Puppy Eyes">
         <h1 id="questionText">Will you be my Valentine?</h1>
-        
+        <div id="escapeCounter"></div>
         <div class="buttons">
-            <button id="yesBtn">Yes!</button>
+            <button id="yesBtn">Yes! 💖</button>
             <button id="noBtn">No</button>
         </div>
     </div>
 
     <script>
-        const noBtn = document.getElementById('noBtn');
-        const yesBtn = document.getElementById('yesBtn');
-        const gifDisplay = document.getElementById('gifDisplay');
-        const questionText = document.getElementById('questionText');
+        const noBtn          = document.getElementById('noBtn');
+        const yesBtn         = document.getElementById('yesBtn');
+        const gifDisplay     = document.getElementById('gifDisplay');
+        const questionText   = document.getElementById('questionText');
+        const escapeCounter  = document.getElementById('escapeCounter');
+        const heartBg        = document.getElementById('heartBg');
 
-        // The "Runaway" Logic
-        const moveButton = () => {
-            // Calculate random coordinates within the window
-            // Subtracting button width/height to keep it in view
-            const x = Math.random() * (window.innerWidth - noBtn.offsetWidth);
-            const y = Math.random() * (window.innerHeight - noBtn.offsetHeight);
-            
-            noBtn.style.position = 'fixed';
-            noBtn.style.left = `${x}px`;
-            noBtn.style.top = `${y}px`;
-        };
+        // --- Floating hearts ---
+        const heartEmoji = ['❤️', '🩷', '💕', '💗', '💓'];
+        function spawnHeart() {
+            const el = document.createElement('div');
+            el.classList.add('floating-heart');
+            el.textContent = heartEmoji[Math.floor(Math.random() * heartEmoji.length)];
+            el.style.left = Math.random() * 100 + 'vw';
+            const dur = 4 + Math.random() * 6;
+            el.style.animationDuration = dur + 's';
+            el.style.animationDelay    = Math.random() * 3 + 's';
+            el.style.fontSize          = (0.8 + Math.random() * 1.4) + 'rem';
+            heartBg.appendChild(el);
+            setTimeout(() => el.remove(), (dur + 3) * 1000);
+        }
+        setInterval(spawnHeart, 600);
 
-        noBtn.addEventListener('mouseover', moveButton);
-        noBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevents clicking on touch
-            moveButton();
-        });
+        // --- No button ---
+        let escapes = 0;
+        const noBtnLabels    = ['No', 'Nope', 'Never!', 'Noooo!', 'Please no', '...no', 'I beg you', 'run run run', "you can't catch me", 'HELP'];
+        const counterQuips   = ['Close one!', 'Too slow 😏', "You can't catch me!", 'Give up yet?', 'Still running!', 'Getting tired?', 'Nice try 😂', 'How about now?', 'Still no!'];
 
-        // The Success State
+        function moveNoButton() {
+            escapes++;
+
+            const scale = Math.max(0.35, 1 - escapes * 0.065);
+            noBtn.style.fontSize = (1.2 * scale) + 'rem';
+            noBtn.style.padding  = (15 * scale) + 'px ' + (30 * scale) + 'px';
+            noBtn.textContent    = noBtnLabels[Math.min(escapes - 1, noBtnLabels.length - 1)];
+
+            const yScale = Math.min(1.6, 1 + escapes * 0.045);
+            yesBtn.style.fontSize = (1.2 * yScale) + 'rem';
+            yesBtn.style.padding  = (15 * yScale) + 'px ' + (30 * yScale) + 'px';
+
+            const quip = counterQuips[Math.min(escapes - 1, counterQuips.length - 1)];
+            escapeCounter.textContent = escapes === 1 ? '1 escape 👀' : `${escapes} escapes — ${quip}`;
+            escapeCounter.classList.remove('bump');
+            void escapeCounter.offsetWidth;
+            escapeCounter.classList.add('bump');
+
+            const margin = 20;
+            const x = margin + Math.random() * (window.innerWidth  - noBtn.offsetWidth  - margin * 2);
+            const y = margin + Math.random() * (window.innerHeight - noBtn.offsetHeight - margin * 2);
+            noBtn.style.left = x + 'px';
+            noBtn.style.top  = y + 'px';
+        }
+
+        noBtn.addEventListener('mouseover', moveNoButton);
+        noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); });
+
+        // --- Confetti ---
+        const confettiColors = ['#ff4d6d', '#ff85a1', '#ffd700', '#ff69b4', '#c084fc', '#60a5fa', '#34d399'];
+        function launchConfetti() {
+            for (let i = 0; i < 140; i++) {
+                const piece = document.createElement('div');
+                piece.classList.add('confetti-piece');
+                piece.style.left            = Math.random() * 100 + 'vw';
+                piece.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                piece.style.width           = (6 + Math.random() * 10) + 'px';
+                piece.style.height          = (6 + Math.random() * 10) + 'px';
+                piece.style.borderRadius    = Math.random() > 0.5 ? '50%' : '2px';
+                const dur = 2 + Math.random() * 2;
+                piece.style.animationDuration = dur + 's';
+                piece.style.animationDelay    = Math.random() * 0.9 + 's';
+                document.body.appendChild(piece);
+                setTimeout(() => piece.remove(), (dur + 1) * 1000);
+            }
+        }
+
+        // --- Yes button ---
         yesBtn.addEventListener('click', () => {
-            questionText.innerText = "Yay! See you on the 14th! ❤️";
-            gifDisplay.src = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnY1ZXN6ZnR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/l41lTfuxV6ZoO3fHO/giphy.gif"; // Celebratory GIF
-            noBtn.style.display = 'none'; // Get rid of the evidence
+            questionText.innerText = 'Yay! See you on the 14th! ❤️';
+            gifDisplay.src = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnY1ZXN6ZnR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/l41lTfuxV6ZoO3fHO/giphy.gif';
+            noBtn.style.display = 'none';
+            escapeCounter.textContent = escapes > 0
+                ? `It took ${escapes} escape${escapes !== 1 ? 's' : ''}, but you got there! 💖`
+                : 'Straight to yes! Smooth. 💖';
+            escapeCounter.style.color = '#d63384';
+            launchConfetti();
         });
     </script>
 </body>
